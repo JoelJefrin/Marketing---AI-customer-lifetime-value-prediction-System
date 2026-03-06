@@ -836,3 +836,53 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+.model-badge {
+  margin: 0 0 10px;
+  color: #4a6683;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.model-meta-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.model-meta-grid div {
+  border: 1px solid #d7e4f2;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafcff;
+}
+
+.model-meta-grid h4 {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.model-meta-grid p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.dataset-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #1363d2;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.dataset-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 980px) {
+  .model-meta-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,6 @@
+﻿customer_id,monthly_spend,tenure,support_tickets,last_purchase,engagement_score,plan_tier,purchase_frequency,age,gender,category,visit_date,purchased
+CSV-2001,980,16,2,12,74,pro,4,29,female,electronics,2026-02-27,true
+CSV-2002,420,8,5,48,44,basic,2,23,male,accessories,2026-02-25,false
+CSV-2003,1820,30,1,5,88,enterprise,6,41,male,electronics,2026-02-26,true
+CSV-2004,760,14,3,24,63,pro,3,36,female,clothing,2026-02-20,true
+CSV-2005,320,4,6,72,31,basic,1,55,male,accessories,2026-02-18,false

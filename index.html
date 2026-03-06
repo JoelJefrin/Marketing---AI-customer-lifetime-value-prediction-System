@@ -136,6 +136,13 @@
                   Purchase Frequency (orders/month)
                   <input type="number" id="purchaseFrequency" min="1" max="12" value="4" required />
                 </label>
+                <label>
+                  Prediction Engine
+                  <select id="predictionModel">
+                    <option value="machine-learning" selected>Machine Learning Model</option>
+                    <option value="rule-based">Rule-Based Engine</option>
+                  </select>
+                </label>
               </div>
               <button type="submit" class="btn-primary">Predict Customer Value</button>
             </form>
@@ -145,6 +152,7 @@
                 <h3>Prediction Output</h3>
                 <span class="status-pill" id="predictionStatus">Awaiting prediction</span>
               </div>
+              <p class="model-badge" id="currentModelBadge">Prediction API • Machine Learning Model v1</p>
 
               <div class="primary-result">
                 <p>Predicted CLV</p>
@@ -301,48 +309,45 @@
           </article>
         </section>
 
-        <section id="model-pipeline" class="tab-panel">
+                <section id="model-pipeline" class="tab-panel">
           <div class="pipeline-grid">
             <article class="card pipeline-step">
               <span>01</span>
-              <h3>Data Ingestion</h3>
-              <p>Collect transactions, profile attributes, campaign responses, and support logs.</p>
+              <h3>Frontend Dashboard</h3>
+              <p>Prediction Studio and KPI dashboards collect user input and visualize CLV outcomes.</p>
             </article>
             <article class="card pipeline-step">
               <span>02</span>
-              <h3>Feature Engineering</h3>
-              <p>Build recency, purchase frequency, engagement trend, and tenure quality features.</p>
+              <h3>Machine Learning Model</h3>
+              <p>ML model estimates customer lifetime value and churn risk from behavior and profile features.</p>
             </article>
             <article class="card pipeline-step">
               <span>03</span>
-              <h3>Predictive Model</h3>
-              <p>Estimate customer value and churn probability using weighted retention signals.</p>
+              <h3>Prediction API</h3>
+              <p>Single prediction interface serves outputs to the app regardless of selected model engine.</p>
             </article>
             <article class="card pipeline-step">
               <span>04</span>
-              <h3>CLV Prediction</h3>
-              <p>Return CLV forecast, customer segment, confidence, and next best marketing action.</p>
+              <h3>Customer Analytics</h3>
+              <p>Predictions feed dashboard analytics, customer insights, and conversion intelligence modules.</p>
             </article>
           </div>
 
           <article class="card feature-card">
-            <h3>Feature Explanations</h3>
-            <div class="feature-list">
+            <h3>Active Model and Dataset</h3>
+            <div class="model-meta-grid">
               <div>
-                <h4>Recency</h4>
-                <p>How recently a customer purchased; fresher activity usually indicates better retention.</p>
+                <h4 id="activeModelName">Machine Learning Model v1</h4>
+                <p id="activeModelDescription">
+                  Linear ML model (trained offline on the included dataset) for CLV and churn probability.
+                </p>
               </div>
               <div>
-                <h4>Purchase Frequency</h4>
-                <p>How often a customer buys each month; frequent purchases increase lifetime value velocity.</p>
-              </div>
-              <div>
-                <h4>Engagement Score</h4>
-                <p>Combined behavior index from product activity and campaign interaction signals.</p>
-              </div>
-              <div>
-                <h4>Customer Tenure</h4>
-                <p>Longer tenure generally improves retention stability and model confidence.</p>
+                <h4>Training Dataset</h4>
+                <p>
+                  File path: <code id="activeModelDataset">data/customer_clv_training_dataset.csv</code>
+                </p>
+                <a class="dataset-link" href="data/customer_clv_training_dataset.csv" download>Download Dataset</a>
               </div>
             </div>
           </article>
@@ -459,6 +464,7 @@
               Expected columns: customer_id, monthly_spend, tenure, support_tickets, last_purchase,
               engagement_score, plan_tier, purchase_frequency
             </p>
+            <p class="hint">Use <a href="data/sample_customer_upload.csv" download>sample_customer_upload.csv</a> to test uploads.</p>
             <label class="file-input-wrap">
               Select CSV File
               <input type="file" id="csvFileInput" accept=".csv,text/csv" />
@@ -487,3 +493,8 @@
     <script src="app.js"></script>
   </body>
 </html>
+
+
+
+
+

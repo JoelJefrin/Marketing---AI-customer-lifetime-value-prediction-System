@@ -1,9 +1,19 @@
 ﻿const AGE_GROUPS = ["18-24", "25-34", "35-44", "45-54", "55+"];
+const MODEL_TYPES = {
+  RULE_BASED: "rule-based",
+  MACHINE_LEARNING: "machine-learning"
+};
+const MODEL_LABELS = {
+  [MODEL_TYPES.RULE_BASED]: "Rule-Based Engine",
+  [MODEL_TYPES.MACHINE_LEARNING]: "Machine Learning Model v1"
+};
+
 const state = {
   customers: [],
   selectedSegment: "All",
   searchTerm: "",
   latestPrediction: null,
+  activeModel: MODEL_TYPES.MACHINE_LEARNING,
   simulatorBaseInput: {
     monthlySpend: 960,
     tenure: 16,
@@ -39,6 +49,7 @@ const dom = {
   tabLinks: document.querySelectorAll(".tab-link"),
   tabPanels: document.querySelectorAll(".tab-panel"),
   predictionForm: document.getElementById("predictionForm"),
+  predictionModel: document.getElementById("predictionModel"),
   monthlySpend: document.getElementById("monthlySpend"),
   tenure: document.getElementById("tenure"),
   supportTickets: document.getElementById("supportTickets"),
@@ -53,6 +64,7 @@ const dom = {
   predictedChurnRisk: document.getElementById("predictedChurnRisk"),
   predictedConfidence: document.getElementById("predictedConfidence"),
   recommendedAction: document.getElementById("recommendedAction"),
+  currentModelBadge: document.getElementById("currentModelBadge"),
   savePredictionBtn: document.getElementById("savePredictionBtn"),
   kpiAvgClv: document.getElementById("kpiAvgClv"),
   kpiHighValue: document.getElementById("kpiHighValue"),
@@ -95,7 +107,10 @@ const dom = {
   conversionCategoryFilter: document.getElementById("conversionCategoryFilter"),
   conversionTimeFilter: document.getElementById("conversionTimeFilter"),
   conversionInsightsOutput: document.getElementById("conversionInsightsOutput"),
-  generateConversionInsightsBtn: document.getElementById("generateConversionInsightsBtn")
+  generateConversionInsightsBtn: document.getElementById("generateConversionInsightsBtn"),
+  activeModelName: document.getElementById("activeModelName"),
+  activeModelDataset: document.getElementById("activeModelDataset"),
+  activeModelDescription: document.getElementById("activeModelDescription")
 };
 
 const tabLabels = {
@@ -206,7 +221,7 @@ function seededRandom(seed = 20260306) {
   };
 }
 
-function predictCustomer(input) {
+function predictRuleBased(input) {
   const monthlySpend = clamp(toNumber(input.monthlySpend, 0), 10, 100000);
   const tenure = clamp(toNumber(input.tenure, 1), 1, 240);
   const supportTickets = clamp(toNumber(input.supportTickets, 0), 0, 100);
@@ -279,7 +294,132 @@ function predictCustomer(input) {
   };
 }
 
-function buildSeedData() {
+
+function getModelMetadata(modelType) {
+  if (modelType === MODEL_TYPES.RULE_BASED) {
+    return {
+      modelLabel: MODEL_LABELS[MODEL_TYPES.RULE_BASED],
+      datasetPath: "data/customer_clv_training_dataset.csv",
+      description: "Deterministic heuristic model built from weighted business rules."
+    };
+  }
+
+  return {
+    modelLabel: MODEL_LABELS[MODEL_TYPES.MACHINE_LEARNING],
+    datasetPath: "data/customer_clv_training_dataset.csv",
+    description:
+      "Linear ML model (trained offline on the included dataset) for CLV and logistic churn probability."
+  };
+}
+
+function sigmoid(value) {
+  return 1 / (1 + Math.exp(-value));
+}
+
+function predictMachineLearning(input) {
+  const monthlySpend = clamp(toNumber(input.monthlySpend, 0), 10, 100000);
+  const tenure = clamp(toNumber(input.tenure, 1), 1, 240);
+  const supportTickets = clamp(toNumber(input.supportTickets, 0), 0, 100);
+  const lastPurchase = clamp(toNumber(input.lastPurchase, 30), 0, 365);
+  const engagementScore = clamp(toNumber(input.engagementScore, 50), 1, 100);
+  const purchaseFrequency = clamp(toNumber(input.purchaseFrequency, 3), 1, 30);
+  const planTier = normalizePlanTier(input.planTier);
+
+  const spendLog = Math.log1p(monthlySpend);
+  const tenureScaled = tenure / 48;
+  const supportScaled = supportTickets / 12;
+  const recencyScaled = lastPurchase / 90;
+  const engagementScaled = engagementScore / 100;
+  const frequencyScaled = purchaseFrequency / 8;
+  const isPro = planTier === "pro" ? 1 : 0;
+  const isEnterprise = planTier === "enterprise" ? 1 : 0;
+
+  const clvLinear =
+    8.15 +
+    spendLog * 0.41 +
+    tenureScaled * 0.36 -
+    supportScaled * 0.19 -
+    recencyScaled * 0.16 +
+    engagementScaled * 0.58 +
+    frequencyScaled * 0.44 +
+    isPro * 0.09 +
+    isEnterprise * 0.21;
+
+  const predictedClv = clamp(Math.exp(clvLinear), 900, 125000);
+
+  const churnLogit =
+    0.92 -
+    engagementScaled * 2.08 -
+    tenureScaled * 0.56 +
+    supportScaled * 1.25 +
+    recencyScaled * 0.84 -
+    frequencyScaled * 0.95 -
+    isPro * 0.16 -
+    isEnterprise * 0.34;
+  const churnRisk = clamp(sigmoid(churnLogit) * 100, 4, 97);
+
+  let segment = "Growth";
+  if (predictedClv >= 28000 && churnRisk < 25) segment = "VIP";
+  if (predictedClv < 12000 || churnRisk >= 50) segment = "At Risk";
+
+  const signalStrength = Math.abs(churnRisk - 50) / 50;
+  const confidenceRaw = 78 + signalStrength * 15 + Math.min(tenure / 40, 4) - Math.min(supportTickets * 0.4, 8);
+  const confidence = clamp(confidenceRaw, 74, 98);
+
+  const contributionRaw = {
+    monthlySpend: Math.abs(spendLog * 0.41),
+    engagement: Math.abs(engagementScaled * 0.58),
+    tenure: Math.abs(tenureScaled * 0.36),
+    frequency: Math.abs(frequencyScaled * 0.44)
+  };
+  const sum = Object.values(contributionRaw).reduce((acc, value) => acc + value, 0) || 1;
+  const contributions = {
+    monthlySpend: Math.round((contributionRaw.monthlySpend / sum) * 100),
+    engagement: Math.round((contributionRaw.engagement / sum) * 100),
+    tenure: Math.round((contributionRaw.tenure / sum) * 100),
+    frequency: Math.round((contributionRaw.frequency / sum) * 100)
+  };
+
+  return {
+    predictedClv,
+    segment,
+    churnRisk,
+    confidence,
+    action: actionBySegment[segment],
+    contributions,
+    modelInput: {
+      monthlySpend,
+      tenure,
+      supportTickets,
+      lastPurchase,
+      engagementScore,
+      planTier,
+      purchaseFrequency
+    }
+  };
+}
+
+function predictWithModel(input, modelType = state.activeModel) {
+  const core = modelType === MODEL_TYPES.RULE_BASED ? predictRuleBased(input) : predictMachineLearning(input);
+  const meta = getModelMetadata(modelType);
+
+  return {
+    ...core,
+    predictionModel: modelType,
+    modelLabel: meta.modelLabel,
+    datasetPath: meta.datasetPath
+  };
+}
+
+const predictionApi = {
+  predict(input, modelType = state.activeModel) {
+    return predictWithModel(input, modelType);
+  },
+  predictBatch(records, modelType = state.activeModel) {
+    return records.map((record) => ({ ...record, ...predictWithModel(record, modelType) }));
+  }
+};
+function buildSeedData(modelType = state.activeModel) {
   const base = [
     { customerId: "VP-1001", monthlySpend: 1650, tenure: 29, supportTickets: 1, lastPurchase: 5, engagementScore: 87, planTier: "enterprise", purchaseFrequency: 6 },
     { customerId: "VP-1002", monthlySpend: 540, tenure: 11, supportTickets: 4, lastPurchase: 32, engagementScore: 52, planTier: "basic", purchaseFrequency: 2 },
@@ -297,7 +437,7 @@ function buildSeedData() {
     { customerId: "VP-1014", monthlySpend: 1240, tenure: 19, supportTickets: 2, lastPurchase: 11, engagementScore: 76, planTier: "pro", purchaseFrequency: 4 }
   ];
 
-  return base.map((row) => ({ ...row, ...predictCustomer(row) }));
+  return predictionApi.predictBatch(base, modelType);
 }
 
 function buildConversionSeedData(count = 480) {
@@ -663,6 +803,9 @@ function renderPrediction(result) {
   dom.predictedChurnRisk.textContent = formatPercent(result.churnRisk);
   dom.predictedConfidence.textContent = formatPercent(result.confidence);
   dom.recommendedAction.textContent = result.action;
+  if (dom.currentModelBadge) {
+    dom.currentModelBadge.textContent = `Prediction API • ${result.modelLabel}`;
+  }
 
   if (result.segment === "VIP") dom.predictedSegment.style.color = "#17935a";
   else if (result.segment === "At Risk") dom.predictedSegment.style.color = "#cb4343";
@@ -710,6 +853,14 @@ function updateExplainableAI(result) {
   dom.contributionValues.frequency.textContent = `${result.contributions.frequency}%`;
 }
 
+function updateModelPipelinePanel() {
+  if (!dom.activeModelName || !dom.activeModelDataset || !dom.activeModelDescription) return;
+  const metadata = getModelMetadata(state.activeModel);
+  dom.activeModelName.textContent = metadata.modelLabel;
+  dom.activeModelDataset.textContent = metadata.datasetPath;
+  dom.activeModelDescription.textContent = metadata.description;
+}
+
 function syncSimulatorFromPrediction(result) {
   state.simulatorBaseInput = { ...result.modelInput };
   state.simulatorBaselineClv = result.predictedClv;
@@ -733,7 +884,9 @@ function runPredictionFromForm() {
     purchaseFrequency: toNumber(dom.purchaseFrequency.value, 1)
   };
 
-  const result = predictCustomer(input);
+  const selectedModel = dom.predictionModel?.value || state.activeModel;
+  state.activeModel = selectedModel;
+  const result = predictionApi.predict(input, selectedModel);
   state.latestPrediction = {
     customerId: `LIVE-${String(Date.now()).slice(-6)}`,
     ...input,
@@ -743,6 +896,7 @@ function runPredictionFromForm() {
   renderPrediction(result);
   updateExplainableAI(result);
   syncSimulatorFromPrediction(result);
+  updateModelPipelinePanel();
 }
 
 function setupPredictionStudio() {
@@ -754,6 +908,15 @@ function setupPredictionStudio() {
     event.preventDefault();
     runPredictionFromForm();
   });
+
+  if (dom.predictionModel) {
+    dom.predictionModel.value = state.activeModel;
+    dom.predictionModel.addEventListener("change", () => {
+      state.activeModel = dom.predictionModel.value;
+      updateModelPipelinePanel();
+      runPredictionFromForm();
+    });
+  }
 
   dom.savePredictionBtn.addEventListener("click", () => {
     if (!state.latestPrediction) return;
@@ -795,7 +958,7 @@ function runScenarioSimulation() {
     purchaseFrequency: toNumber(dom.simFrequency.value, state.simulatorBaseInput.purchaseFrequency)
   };
 
-  const scenarioResult = predictCustomer(scenarioInput);
+  const scenarioResult = predictionApi.predict(scenarioInput, state.activeModel);
   const baselineClv = state.simulatorBaselineClv || scenarioResult.predictedClv;
   const upliftPct = ((scenarioResult.predictedClv - baselineClv) / baselineClv) * 100;
 
@@ -1135,7 +1298,7 @@ function mapHeaderIndexes(headers) {
   };
 }
 
-function parseCustomerCsv(text) {
+function parseCustomerCsv(text, modelType = state.activeModel) {
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -1179,7 +1342,7 @@ function parseCustomerCsv(text) {
       purchaseFrequency: toNumber(parts[indexMap.purchaseFrequency], 3)
     };
 
-    records.push({ ...parsed, ...predictCustomer(parsed) });
+    records.push({ ...parsed, ...predictionApi.predict(parsed, modelType) });
 
     if (indexMap.age >= 0) {
       const age = toNumber(parts[indexMap.age], NaN);
@@ -1233,7 +1396,7 @@ function setupDataUpload() {
     const reader = new FileReader();
     reader.onload = () => {
       const text = String(reader.result || "");
-      const parsed = parseCustomerCsv(text);
+      const parsed = parseCustomerCsv(text, state.activeModel);
 
       if (!parsed.records.length) {
         dom.uploadStatus.textContent =
@@ -1263,7 +1426,7 @@ function setupDataUpload() {
 }
 
 function initialize() {
-  state.customers = buildSeedData();
+  state.customers = buildSeedData(state.activeModel);
   state.conversionRecords = buildConversionSeedData();
 
   setupTabs();
@@ -1281,6 +1444,20 @@ function initialize() {
 }
 
 initialize();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
