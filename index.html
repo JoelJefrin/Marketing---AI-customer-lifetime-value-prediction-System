@@ -1,0 +1,489 @@
+﻿<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ValuePulse AI - Customer Intelligence Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-gradient"></div>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">VP</div>
+          <div>
+            <h1>ValuePulse AI</h1>
+            <p>Customer Intelligence Platform</p>
+          </div>
+        </div>
+
+        <nav class="tab-nav" id="tabNav">
+          <button class="tab-link active" data-tab="dashboard">Dashboard</button>
+          <button class="tab-link" data-tab="prediction-studio">Prediction Studio</button>
+          <button class="tab-link" data-tab="customer-insights">Customer Insights</button>
+          <button class="tab-link" data-tab="conversion-insights">Conversion Insights</button>
+          <button class="tab-link" data-tab="model-pipeline">AI Model Pipeline</button>
+          <button class="tab-link" data-tab="explainable-ai">Explainable AI</button>
+          <button class="tab-link" data-tab="scenario-simulator">Scenario Simulator</button>
+          <button class="tab-link" data-tab="data-upload">Data Upload</button>
+        </nav>
+
+        <div class="sidebar-note">
+          <h3>Hackathon Demo</h3>
+          <p>Predict CLV, detect churn risk, explain model output, and recommend marketing actions.</p>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="workspace-header">
+          <div>
+            <p class="kicker">AI Customer Intelligence</p>
+            <h2 id="activeTabTitle">Dashboard</h2>
+          </div>
+          <div class="header-meta">
+            <span id="lastUpdated">Last updated: --</span>
+          </div>
+        </header>
+
+        <section id="dashboard" class="tab-panel active">
+          <div class="kpi-grid">
+            <article class="card kpi-card">
+              <p>Average CLV</p>
+              <h3 id="kpiAvgClv">$0</h3>
+              <small>Portfolio average customer lifetime value</small>
+            </article>
+            <article class="card kpi-card">
+              <p>High Value Customers</p>
+              <h3 id="kpiHighValue">0%</h3>
+              <small>Share of customers in VIP segment</small>
+            </article>
+            <article class="card kpi-card">
+              <p>At Risk Customers</p>
+              <h3 id="kpiAtRisk">0%</h3>
+              <small>Customers with elevated churn probability</small>
+            </article>
+            <article class="card kpi-card">
+              <p>Revenue Projection</p>
+              <h3 id="kpiRevenue">$0</h3>
+              <small>Expected 12 month projected revenue</small>
+            </article>
+          </div>
+
+          <div class="chart-grid">
+            <article class="card chart-card">
+              <div class="card-head">
+                <h3>CLV Distribution</h3>
+              </div>
+              <canvas id="clvDistributionChart"></canvas>
+            </article>
+            <article class="card chart-card">
+              <div class="card-head">
+                <h3>Churn Risk Mix</h3>
+              </div>
+              <canvas id="churnRiskChart"></canvas>
+            </article>
+            <article class="card chart-card wide">
+              <div class="card-head">
+                <h3>12 Month Revenue Forecast</h3>
+              </div>
+              <canvas id="revenueForecastChart"></canvas>
+            </article>
+          </div>
+        </section>
+
+        <section id="prediction-studio" class="tab-panel">
+          <div class="split-layout">
+            <form id="predictionForm" class="card form-card">
+              <h3>Customer Profile Inputs</h3>
+              <div class="field-grid">
+                <label>
+                  Monthly Spend (USD)
+                  <input type="number" id="monthlySpend" min="50" value="960" required />
+                </label>
+                <label>
+                  Tenure (months)
+                  <input type="number" id="tenure" min="1" value="16" required />
+                </label>
+                <label>
+                  Support Tickets (last 90 days)
+                  <input type="number" id="supportTickets" min="0" value="2" required />
+                </label>
+                <label>
+                  Last Purchase (days ago)
+                  <input type="number" id="lastPurchase" min="0" value="14" required />
+                </label>
+                <label>
+                  Engagement Score
+                  <input type="range" id="engagementScore" min="1" max="100" value="74" />
+                  <small id="engagementDisplay">74</small>
+                </label>
+                <label>
+                  Plan Tier
+                  <select id="planTier">
+                    <option value="basic">Basic</option>
+                    <option value="pro" selected>Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                </label>
+                <label>
+                  Purchase Frequency (orders/month)
+                  <input type="number" id="purchaseFrequency" min="1" max="12" value="4" required />
+                </label>
+              </div>
+              <button type="submit" class="btn-primary">Predict Customer Value</button>
+            </form>
+
+            <article class="card output-card">
+              <div class="output-head">
+                <h3>Prediction Output</h3>
+                <span class="status-pill" id="predictionStatus">Awaiting prediction</span>
+              </div>
+
+              <div class="primary-result">
+                <p>Predicted CLV</p>
+                <h4 id="predictedClv">$0</h4>
+              </div>
+
+              <div class="result-grid">
+                <article>
+                  <p>Customer Segment</p>
+                  <strong id="predictedSegment">-</strong>
+                </article>
+                <article>
+                  <p>Churn Risk</p>
+                  <strong id="predictedChurnRisk">-</strong>
+                </article>
+                <article>
+                  <p>Confidence Score</p>
+                  <strong id="predictedConfidence">-</strong>
+                </article>
+              </div>
+
+              <div class="action-box">
+                <p class="action-title">Recommended Business Action</p>
+                <p id="recommendedAction">Run a prediction to generate a recommendation.</p>
+              </div>
+
+              <button id="savePredictionBtn" class="btn-secondary" type="button">Add to Customer Insights</button>
+            </article>
+          </div>
+        </section>
+
+        <section id="customer-insights" class="tab-panel">
+          <article class="card">
+            <div class="insights-toolbar">
+              <div class="segment-filters" id="segmentFilters">
+                <button class="filter-btn active" data-segment="All">All</button>
+                <button class="filter-btn" data-segment="VIP">VIP</button>
+                <button class="filter-btn" data-segment="Growth">Growth</button>
+                <button class="filter-btn" data-segment="At Risk">At Risk</button>
+              </div>
+              <label class="search-box">
+                Search
+                <input type="search" id="insightsSearch" placeholder="Customer ID or action" />
+              </label>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer ID</th>
+                    <th>Predicted CLV</th>
+                    <th>Segment</th>
+                    <th>Churn Risk</th>
+                    <th>Recommended Action</th>
+                  </tr>
+                </thead>
+                <tbody id="insightsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section id="conversion-insights" class="tab-panel">
+          <article class="card conversion-page-header">
+            <h3>Conversion Rate by Age</h3>
+            <p>Analyze how customer age affects purchasing behavior and conversion rates.</p>
+          </article>
+
+          <div class="conversion-kpi-grid">
+            <article class="card kpi-card">
+              <p>Total Visitors</p>
+              <h3 id="convTotalVisitors">0</h3>
+              <small>Visitors within selected filters</small>
+            </article>
+            <article class="card kpi-card">
+              <p>Total Purchases</p>
+              <h3 id="convTotalPurchases">0</h3>
+              <small>Converted visitors who completed purchase</small>
+            </article>
+            <article class="card kpi-card">
+              <p>Overall Conversion Rate</p>
+              <h3 id="convOverallRate">0%</h3>
+              <small>Purchases divided by visitors</small>
+            </article>
+            <article class="card kpi-card">
+              <p>Best Performing Age Group</p>
+              <h3 id="convBestAgeGroup">-</h3>
+              <small>Highest conversion segment</small>
+            </article>
+          </div>
+
+          <article class="card conversion-filters-card">
+            <h3>Filters and Controls</h3>
+            <div class="conversion-filter-grid">
+              <label>
+                Gender
+                <select id="conversionGenderFilter">
+                  <option value="all">All</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
+              </label>
+              <label>
+                Product Category
+                <select id="conversionCategoryFilter">
+                  <option value="all">All Categories</option>
+                  <option value="electronics">Electronics</option>
+                  <option value="clothing">Clothing</option>
+                  <option value="accessories">Accessories</option>
+                </select>
+              </label>
+              <label>
+                Time Range
+                <select id="conversionTimeFilter">
+                  <option value="7">Last 7 days</option>
+                  <option value="30" selected>Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="all">All Time</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <div class="conversion-chart-grid">
+            <article class="card chart-card">
+              <div class="card-head">
+                <h3>Conversion Rate by Age Group</h3>
+              </div>
+              <canvas id="conversionRateByAgeChart"></canvas>
+            </article>
+            <article class="card chart-card">
+              <div class="card-head">
+                <h3>Purchase Distribution by Age</h3>
+              </div>
+              <canvas id="purchaseDistributionByAgeChart"></canvas>
+            </article>
+            <article class="card chart-card wide">
+              <div class="card-head">
+                <h3>Age vs Purchase Probability</h3>
+              </div>
+              <canvas id="agePurchaseProbabilityChart"></canvas>
+            </article>
+          </div>
+
+          <article class="card ai-insights-panel">
+            <div class="ai-insights-head">
+              <h3>AI Marketing Insights</h3>
+              <button id="generateConversionInsightsBtn" type="button" class="btn-secondary">Generate Insights</button>
+            </div>
+            <div id="conversionInsightsOutput" class="conversion-insights-output">
+              <p>Click Generate Insights to get data-driven marketing recommendations for each age segment.</p>
+            </div>
+          </article>
+        </section>
+
+        <section id="model-pipeline" class="tab-panel">
+          <div class="pipeline-grid">
+            <article class="card pipeline-step">
+              <span>01</span>
+              <h3>Data Ingestion</h3>
+              <p>Collect transactions, profile attributes, campaign responses, and support logs.</p>
+            </article>
+            <article class="card pipeline-step">
+              <span>02</span>
+              <h3>Feature Engineering</h3>
+              <p>Build recency, purchase frequency, engagement trend, and tenure quality features.</p>
+            </article>
+            <article class="card pipeline-step">
+              <span>03</span>
+              <h3>Predictive Model</h3>
+              <p>Estimate customer value and churn probability using weighted retention signals.</p>
+            </article>
+            <article class="card pipeline-step">
+              <span>04</span>
+              <h3>CLV Prediction</h3>
+              <p>Return CLV forecast, customer segment, confidence, and next best marketing action.</p>
+            </article>
+          </div>
+
+          <article class="card feature-card">
+            <h3>Feature Explanations</h3>
+            <div class="feature-list">
+              <div>
+                <h4>Recency</h4>
+                <p>How recently a customer purchased; fresher activity usually indicates better retention.</p>
+              </div>
+              <div>
+                <h4>Purchase Frequency</h4>
+                <p>How often a customer buys each month; frequent purchases increase lifetime value velocity.</p>
+              </div>
+              <div>
+                <h4>Engagement Score</h4>
+                <p>Combined behavior index from product activity and campaign interaction signals.</p>
+              </div>
+              <div>
+                <h4>Customer Tenure</h4>
+                <p>Longer tenure generally improves retention stability and model confidence.</p>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="explainable-ai" class="tab-panel">
+          <article class="card">
+            <h3>Why the AI predicted this value</h3>
+            <p id="explainNarrative">
+              Run a prediction in Prediction Studio to generate a personalized explanation.
+            </p>
+
+            <div class="contribution-grid">
+              <div class="contribution-row">
+                <div class="contribution-label">
+                  <span>Monthly Spend</span>
+                  <strong id="contrib-monthlySpend-val">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="contrib-monthlySpend" class="bar-fill"></div>
+                </div>
+              </div>
+              <div class="contribution-row">
+                <div class="contribution-label">
+                  <span>Engagement Score</span>
+                  <strong id="contrib-engagement-val">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="contrib-engagement" class="bar-fill"></div>
+                </div>
+              </div>
+              <div class="contribution-row">
+                <div class="contribution-label">
+                  <span>Tenure</span>
+                  <strong id="contrib-tenure-val">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="contrib-tenure" class="bar-fill"></div>
+                </div>
+              </div>
+              <div class="contribution-row">
+                <div class="contribution-label">
+                  <span>Purchase Frequency</span>
+                  <strong id="contrib-frequency-val">0%</strong>
+                </div>
+                <div class="bar-track">
+                  <div id="contrib-frequency" class="bar-fill"></div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section id="scenario-simulator" class="tab-panel">
+          <div class="split-layout">
+            <article class="card simulator-controls">
+              <h3>Scenario Controls</h3>
+              <label>
+                Monthly Spend
+                <div class="slider-header">
+                  <span>USD</span>
+                  <strong id="simMonthlySpendValue">$900</strong>
+                </div>
+                <input type="range" id="simMonthlySpend" min="100" max="5000" step="25" value="900" />
+              </label>
+              <label>
+                Engagement Score
+                <div class="slider-header">
+                  <span>Score</span>
+                  <strong id="simEngagementValue">74</strong>
+                </div>
+                <input type="range" id="simEngagement" min="1" max="100" value="74" />
+              </label>
+              <label>
+                Purchase Frequency
+                <div class="slider-header">
+                  <span>Orders/month</span>
+                  <strong id="simFrequencyValue">4</strong>
+                </div>
+                <input type="range" id="simFrequency" min="1" max="12" value="4" />
+              </label>
+            </article>
+
+            <article class="card scenario-output">
+              <h3>Projected CLV Impact</h3>
+              <div class="scenario-grid">
+                <div>
+                  <p>Baseline CLV</p>
+                  <h4 id="simBaselineClv">$0</h4>
+                </div>
+                <div>
+                  <p>Scenario CLV</p>
+                  <h4 id="simProjectedClv">$0</h4>
+                </div>
+                <div>
+                  <p>Potential Uplift</p>
+                  <h4 id="simUplift">0%</h4>
+                </div>
+              </div>
+              <p id="simInsight" class="sim-insight">
+                Increase engagement and purchase frequency to lift long-term customer value.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section id="data-upload" class="tab-panel">
+          <article class="card upload-card">
+            <h3>CSV Data Upload</h3>
+            <p>
+              Upload customer rows and ValuePulse AI will run CLV and churn predictions automatically.
+            </p>
+            <p class="hint">
+              Expected columns: customer_id, monthly_spend, tenure, support_tickets, last_purchase,
+              engagement_score, plan_tier, purchase_frequency
+            </p>
+            <label class="file-input-wrap">
+              Select CSV File
+              <input type="file" id="csvFileInput" accept=".csv,text/csv" />
+            </label>
+            <p id="uploadStatus" class="upload-status">No file uploaded yet.</p>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer ID</th>
+                    <th>Predicted CLV</th>
+                    <th>Segment</th>
+                    <th>Churn Risk</th>
+                  </tr>
+                </thead>
+                <tbody id="uploadPreviewBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
